@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel Title - Interactive Edition</title>
+    <style>
+        /* CSS Variables for theming */
+        :root {
+            --bg-color: #f8f8f8;
+            --text-color: #333;
+            --ui-bg: #e0e8ff;
+            --conlang-color: #2d5b9e;
+            --translation-color: #ff6600;
+            --ui-text-color: #0a2540;
+            --accent-color: #3a5d9f;
+            --sidebar-bg: #f0f0f0;
+            --sidebar-width: 300px;
+            --header-height: 60px;
+            --border-color: #ddd;
+            --transition-speed: 0.3s;
+        }
+        
+        [data-theme="dark"] {
+            --bg-color: #121827;
+            --text-color: #e6e6e6;
+            --ui-bg: #2a2a4a;
+            --conlang-color: #4d79ff;
+            --translation-color: #ff9e4f;
+            --ui-text-color: #b8c7ff;
+            --accent-color: #5d7fca;
+            --sidebar-bg: #1a2234;
+            --border-color: #2a3344;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color var(--transition-speed), color var(--transition-speed);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Header Styles */
+        header {
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-color);
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color var(--transition-speed);
+        }
+        
+        .header-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 15px;
+        }
+        
+        /* Main Layout */
+        .container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+        }
+        
+        /* Sidebar/TOC Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            overflow-y: auto;
+            transition: background-color var(--transition-speed), transform var(--transition-speed);
+            position: fixed;
+            top: var(--header-height);
+            bottom: 0;
+            left: 0;
+            z-index: 90;
+        }
+        
+        .sidebar-hidden .sidebar {
+            transform: translateX(calc(-1 * var(--sidebar-width)));
+        }
+        
+        .toc-title {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .toc-list {
+            list-style-type: none;
+        }
+        
+        .toc-section {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .toc-chapter {
+            margin: 5px 0 5px 15px;
+        }
+        
+        .toc-link {
+            color: var(--text-color);
+            text-decoration: none;
+            display: block;
+            padding: 5px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .toc-link:hover {
+            background-color: var(--ui-bg);
+        }
+        
+        .toc-link.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        /* Content Styles */
+        .content {
+            flex: 1;
+            padding: 30px;
+            max-width: 800px;
+            margin: 0 auto;
+            transition: margin-left var(--transition-speed);
+        }
+        
+        .sidebar-hidden .content {
+            margin-left: 0;
+        }
+        
+        .chapter-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .chapter-title {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .chapter-subtitle {
+            font-size: 1.3rem;
+            color: var(--accent-color);
+        }
+        
+        .chapter-content p {
+            text-indent: 2em;
+            margin-bottom: 1.2em;
+        }
+        
+        .chapter-navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .nav-button {
+            background-color: var(--ui-bg);
+            color: var(--ui-text-color);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-button:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .nav-button[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Controls */
+        .theme-toggle, .sidebar-toggle, .scroll-top {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        
+        .theme-toggle:hover, .sidebar-toggle:hover, .scroll-top:hover {
+            color: var(--accent-color);
+        }
+        
+        .scroll-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--ui-bg);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        
+        .scroll-top.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        /* Conlang styling */
+        .conlang {
+            position: relative;
+            display: inline-block;
+            color: var(--conlang-color);
+            font-style: italic;
+            cursor: help;
+            transition: color 0.2s;
+        }
+        
+        .conlang:hover {
+            color: transparent;
+        }
+        
+        .translation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: var(--translation-color);
+            font-style: normal;
+            font-weight: bold;
+            opacity: 0;
+            pointer-events: none;
+            transform-origin: center;
+            transform: rotateX(90deg);
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        
+        .conlang:hover .translation {
+            opacity: 1;
+            transform: rotateX(0deg);
+        }
+        
+        /* UI Elements */
+        .ui-element {
+            font-family: 'Courier New', monospace;
+            background-color: var(--ui-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 3px solid var(--conlang-color);
+            color: var(--ui-text-color);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        
+        .ui-element.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(calc(-1 * var(--sidebar-width)));
+            }
+            
+            .sidebar-visible .sidebar {
+                transform: translateX(0);
+            }
+            
+            .content {
+                margin-left: 0;
+                padding: 20px;
+            }
+            
+            .header-title {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="sidebar-hidden">
+    <!-- Header -->
+    <header>
+        <button class="sidebar-toggle" aria-label="Toggle table of contents">☰</button>
+        <div class="header-title">Novel Title</div>
+        <div class="header-controls">
+            <button class="theme-toggle" aria-label="Toggle dark mode">🌙</button>
+        </div>
+    </header>
+
+    <!-- Main container -->
+    <div class="container">
+        <!-- Sidebar with Table of Contents -->
+        <aside class="sidebar">
+            <h2 class="toc-title">Table of Contents</h2>
+            <ul class="toc-list">
+                <!-- Front Matter -->
+                <li class="toc-section">Front Matter</li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="preface">Preface</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="introduction">Introduction</a></li>
+                
+                <!-- Chapters -->
+                <li class="toc-section">Chapters</li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="chapter-1">Chapter One</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="chapter-2">Chapter Two</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="chapter-3">Chapter Three</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link active" data-chapter="chapter-4">Chapter Four</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="chapter-5">Chapter Five</a></li>
+                
+                <!-- Appendices -->
+                <li class="toc-section">Appendices</li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="appendix-a">Appendix A: Glossary</a></li>
+                <li class="toc-chapter"><a href="#" class="toc-link" data-chapter="appendix-b">Appendix B: Timeline</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <div class="chapter-header">
+                <h1 class="chapter-title">Chapter Four</h1>
+                <h2 class="chapter-subtitle">Frederik Skarda</h2>
+            </div>
+            
+            <div class="chapter-content">
+                <!-- Chapter content would be dynamically loaded here -->
+                <p>Content is loaded dynamically from chapter files.</p>
+                <p>This scaffolding provides the structure for the entire novel website.</p>
+            </div>
+            
+            <div class="chapter-navigation">
+                <button class="nav-button prev-chapter">← Previous Chapter</button>
+                <button class="nav-button next-chapter">Next Chapter →</button>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Scroll to top button -->
+    <button class="scroll-top" aria-label="Scroll to top">↑</button>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM Elements
+        const body = document.body;
+        const themeToggle = document.querySelector('.theme-toggle');
+        const sidebarToggle = document.querySelector('.sidebar-toggle');
+        const scrollTopBtn = document.querySelector('.scroll-top');
+        const tocLinks = document.querySelectorAll('.toc-link');
+        const prevChapterBtn = document.querySelector('.prev-chapter');
+        const nextChapterBtn = document.querySelector('.next-chapter');
+        const chapterContent = document.querySelector('.chapter-content');
+        const chapterTitle = document.querySelector('.chapter-title');
+        const chapterSubtitle = document.querySelector('.chapter-subtitle');
+        
+        // State
+        let currentChapter = 'chapter-4'; // Default to chapter 4 for this example
+        let isDarkMode = false;
+        
+        // Chapter metadata - this would typically be loaded from a JSON file
+        const chapters = {
+            'preface': {
+                title: 'Preface',
+                subtitle: '',
+                prev: null,
+                next: 'introduction'
+            },
+            'introduction': {
+                title: 'Introduction',
+                subtitle: '',
+                prev: 'preface',
+                next: 'chapter-1'
+            },
+            'chapter-1': {
+                title: 'Chapter One',
+                subtitle: 'Title',
+                prev: 'introduction',
+                next: 'chapter-2'
+            },
+            'chapter-2': {
+                title: 'Chapter Two',
+                subtitle: 'Title',
+                prev: 'chapter-1',
+                next: 'chapter-3'
+            },
+            'chapter-3': {
+                title: 'Chapter Three',
+                subtitle: 'Title',
+                prev: 'chapter-2', 
+                next: 'chapter-4'
+            },
+            'chapter-4': {
+                title: 'Chapter Four',
+                subtitle: 'Frederik Skarda',
+                prev: 'chapter-3',
+                next: 'chapter-5'
+            },
+            'chapter-5': {
+                title: 'Chapter Five',
+                subtitle: 'Title',
+                prev: 'chapter-4',
+                next: 'appendix-a'
+            },
+            'appendix-a': {
+                title: 'Appendix A',
+                subtitle: 'Glossary',
+                prev: 'chapter-5',
+                next: 'appendix-b'
+            },
+            'appendix-b': {
+                title: 'Appendix B',
+                subtitle: 'Timeline',
+                prev: 'appendix-a',
+                next: null
+            }
+        };
+        
+        // Function to toggle dark mode
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.innerHTML = '☀️';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeToggle.innerHTML = '🌙';
+            }
+            // Store preference
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+        
+        // Function to toggle sidebar
+        function toggleSidebar() {
+            body.classList.toggle('sidebar-hidden');
+        }
+        
+        // Function to load chapter content
+        async function loadChapter(chapterId) {
+            // Update the active TOC link
+            tocLinks.forEach(link => {
+                if (link.dataset.chapter === chapterId) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+            
+            // Update chapter metadata
+            const chapter = chapters[chapterId];
+            chapterTitle.textContent = chapter.title;
+            chapterSubtitle.textContent = chapter.subtitle;
+            
+            // Update navigation buttons
+            prevChapterBtn.disabled = !chapter.prev;
+            nextChapterBtn.disabled = !chapter.next;
+            
+            // In a real implementation, this would fetch the chapter content
+            // For now, we'll just show a placeholder message
+            chapterContent.innerHTML = `<p>This is ${chapter.title} content.</p><p>In a real implementation, this would load the HTML for ${chapterId}.</p>`;
+            
+            // Update current chapter
+            currentChapter = chapterId;
+            
+            // Process conlang elements and UI elements
+            setupConlangElements();
+            setupUIElements();
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // Function to handle conlang hover effects
+        function setupConlangElements() {
+            const conlangWords = document.querySelectorAll('.conlang');
+            conlangWords.forEach(word => {
+                // If translation already exists, skip
+                if (word.querySelector('.translation')) return;
+                
+                const translation = word.dataset.translation;
+                const translationEl = document.createElement('span');
+                translationEl.classList.add('translation');
+                translationEl.textContent = translation;
+                word.appendChild(translationEl);
+            });
+        }
+        
+        // Function to animate UI elements when scrolled into view
+        function setupUIElements() {
+            const uiElements = document.querySelectorAll('.ui-element');
+            
+            // Set up intersection observer
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            // Observe each UI element
+            uiElements.forEach(el => observer.observe(el));
+        }
+        
+        // Event Listeners
+        themeToggle.addEventListener('click', toggleDarkMode);
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        
+        // Table of Contents navigation
+        tocLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const chapterId = link.dataset.chapter;
+                loadChapter(chapterId);
+                // On mobile, close sidebar after selection
+                if (window.innerWidth <= 768) {
+                    body.classList.add('sidebar-hidden');
+                }
+            });
+        });
+        
+        // Chapter navigation
+        prevChapterBtn.addEventListener('click', () => {
+            const prevChapter = chapters[currentChapter].prev;
+            if (prevChapter) loadChapter(prevChapter);
+        });
+        
+        nextChapterBtn.addEventListener('click', () => {
+            const nextChapter = chapters[currentChapter].next;
+            if (nextChapter) loadChapter(nextChapter);
+        });
+        
+        // Scroll to top button
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+        
+        scrollTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load saved preferences
+            const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (savedDarkMode) {
+                isDarkMode = true;
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.innerHTML = '☀️';
+            }
+            
+            // Load initial chapter
+            loadChapter(currentChapter);
+        });
+    </script>
+</body>
+</html>
